@@ -70,13 +70,15 @@ class MainViewModel @Inject constructor(
             _uiData.update { it.copy(state = UiState.Error("Gateway token not set. Open Settings.")) }
             return
         }
-
-        _uiData.update { it.copy(state = UiState.Recording, lastTranscription = "") }
-
+        _uiData.update { it.copy(state = UiState.Recording) }
         listenJob = viewModelScope.launch {
             try {
                 val transcription = voiceInputManager.listen()
-                _uiData.update { it.copy(lastTranscription = transcription) }
+                if (transcription.isNotBlank()) {
+                    _uiData.update { it.copy(
+                        messages = it.messages + ChatMessage(transcription, MessageSender.USER)
+                    )}
+                }
                 sendToGateway(transcription)
             } catch (e: CancellationException) {
                 _uiData.update { it.copy(state = UiState.Idle) }
@@ -96,24 +98,22 @@ class MainViewModel @Inject constructor(
             _uiData.update { it.copy(state = UiState.Idle) }
             return
         }
-
         DebugLogger.log("VM", "sending: $text")
         _uiData.update { it.copy(state = UiState.Processing) }
-
         val screenContext = ChatoAccessibilityService.screenContext
         val result = gatewayRepository.chat(text, screenContext)
-
         result.fold(
             onSuccess = { response ->
                 DebugLogger.log("VM", "response received")
-                _uiData.update { it.copy(lastResponse = response.content, state = UiState.Speaking) }
+                _uiData.update { it.copy(
+                    messages = it.messages + ChatMessage(response.content, MessageSender.CHATO),
+                    state = UiState.Speaking
+                )}
                 speak(response.content)
             },
             onFailure = { error ->
                 DebugLogger.log("VM", "error: ${error.toString()}")
-                _uiData.update {
-                    it.copy(state = UiState.Error(error.message ?: "Gateway error"))
-                }
+                _uiData.update { it.copy(state = UiState.Error(error.toString())) }
             }
         )
     }

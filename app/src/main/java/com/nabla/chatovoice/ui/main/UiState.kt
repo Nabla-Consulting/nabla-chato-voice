@@ -8,10 +8,16 @@ sealed class UiState {
     data class Error(val message: String) : UiState()
 }
 
+enum class MessageSender { USER, CHATO }
+
+data class ChatMessage(
+    val text: String,
+    val sender: MessageSender,
+)
+
 data class MainUiData(
     val state: UiState = UiState.Idle,
-    val lastTranscription: String = "",
-    val lastResponse: String = "",
+    val messages: List<ChatMessage> = emptyList(),
     val isAccessibilityConnected: Boolean = false,
     val hasToken: Boolean = false,
     val gatewayUrl: String = "",
