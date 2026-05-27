@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import com.nabla.chatovoice.ui.theme.ChatoVoiceTheme
+import com.nabla.chatovoice.util.DebugLogger
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -24,6 +25,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        DebugLogger.log("APP", "onCreate — v0.1")
         micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         viewModel.initTts()
         setContent {

@@ -3,6 +3,7 @@ package com.nabla.chatovoice.service
 import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import com.nabla.chatovoice.util.DebugLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
@@ -21,16 +22,19 @@ class TextToSpeechManager @Inject constructor(
     private var isReady = false
 
     fun initialize(onReady: () -> Unit) {
+        DebugLogger.log("TTS", "init called")
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts?.language = Locale.US
                 isReady = true
+                DebugLogger.log("TTS", "ready")
                 onReady()
             }
         }
     }
 
     suspend fun speak(text: String) = suspendCancellableCoroutine { cont ->
+        DebugLogger.log("TTS", "speaking: $text")
         val engine = tts
         if (engine == null || !isReady) {
             cont.resumeWithException(IllegalStateException("TTS not initialized."))
@@ -42,6 +46,7 @@ class TextToSpeechManager @Inject constructor(
 
             override fun onDone(utteranceId: String?) {
                 if (utteranceId == UTTERANCE_ID && cont.isActive) {
+                    DebugLogger.log("TTS", "done")
                     cont.resume(Unit)
                 }
             }

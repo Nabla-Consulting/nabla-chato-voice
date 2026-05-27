@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.nabla.chatovoice.app-mergeDebugResources-52:/values-v21/values-v21.xml",
+            "outputFile": "com.nabla.chatovoice.app-mergeDebugResources-53:/values-v21/values-v21.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\aetxe\\.gradle\\caches\\8.9\\transforms\\8a4e3cbbc74a447bf0c8f32ae56d3c27\\transformed\\core-1.12.0\\res\\values-v21\\values-v21.xml",
+                    "source": "C:\\Users\\aetxe\\.gradle\\caches\\8.9\\transforms\\964c204a46b377c148dd1eb8c0c66d6e\\transformed\\core-1.12.0\\res\\values-v21\\values-v21.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,13",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4",

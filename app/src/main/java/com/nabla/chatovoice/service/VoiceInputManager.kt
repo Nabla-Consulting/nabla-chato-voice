@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import com.nabla.chatovoice.util.DebugLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -27,6 +28,7 @@ class VoiceInputManager @Inject constructor(
      * (e.g. on button release).
      */
     suspend fun listen(): String = suspendCancellableCoroutine { cont ->
+        DebugLogger.log("PTT", "listen() called")
         val speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
         recognizer = speechRecognizer
 
@@ -36,14 +38,15 @@ class VoiceInputManager @Inject constructor(
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
         }
 
+        DebugLogger.log("STT", "startListening")
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
             private var partialResult = ""
 
-            override fun onReadyForSpeech(params: Bundle?) {}
-            override fun onBeginningOfSpeech() {}
+            override fun onReadyForSpeech(params: Bundle?) { DebugLogger.log("STT", "ready for speech") }
+            override fun onBeginningOfSpeech() { DebugLogger.log("STT", "speech started") }
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onEndOfSpeech() {}
+            override fun onEndOfSpeech() { DebugLogger.log("STT", "speech ended") }
 
             override fun onPartialResults(partialResults: Bundle?) {
                 val matches = partialResults
@@ -57,11 +60,13 @@ class VoiceInputManager @Inject constructor(
                 val matches = results
                     ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 val text = if (!matches.isNullOrEmpty()) matches[0] else partialResult
+                DebugLogger.log("STT", "result: $text")
                 cleanup()
                 resumeSafe(cont, text)
             }
 
             override fun onError(error: Int) {
+                DebugLogger.log("STT", "error code: $error")
                 cleanup()
                 val msg = speechErrorMessage(error)
                 if (cont.isActive) {
@@ -87,6 +92,7 @@ class VoiceInputManager @Inject constructor(
     }
 
     fun stopListening() {
+        DebugLogger.log("PTT", "stopListening called")
         recognizer?.stopListening()
     }
 

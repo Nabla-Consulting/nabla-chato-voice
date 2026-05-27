@@ -2,6 +2,9 @@ package com.nabla.chatovoice.ui.main
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
@@ -11,11 +14,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nabla.chatovoice.util.DebugLogger
 
 private const val APP_VERSION = "v0.1"
 
@@ -135,6 +141,49 @@ fun MainScreen(viewModel: MainViewModel) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            // Debug log panel
+            val logs by DebugLogger.logs.collectAsStateWithLifecycle()
+            val listState = rememberLazyListState()
+            LaunchedEffect(logs.size) {
+                if (logs.isNotEmpty()) listState.animateScrollToItem(logs.size - 1)
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Debug", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                TextButton(onClick = { DebugLogger.clear() }, contentPadding = PaddingValues(0.dp)) {
+                    Text("Clear", style = MaterialTheme.typography.labelSmall)
+                }
+            }
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                color = Color(0xFF1A1A1A),
+                shape = MaterialTheme.shapes.small
+            ) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.padding(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    items(logs) { line ->
+                        Text(
+                            text = line,
+                            fontSize = 10.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = Color(0xFF00FF88),
+                            lineHeight = 13.sp
+                        )
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
         }

@@ -3,6 +3,7 @@ package com.nabla.chatovoice.data.remote
 import android.content.Context
 import android.content.SharedPreferences
 import com.nabla.chatovoice.domain.model.ChatResponse
+import com.nabla.chatovoice.util.DebugLogger
 import com.nabla.chatovoice.domain.repository.GatewayRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -50,6 +51,7 @@ class ChatoGatewayRepository @Inject constructor(
     fun hasToken(): Boolean = true
 
     override suspend fun chat(userText: String, screenContext: String?): Result<ChatResponse> {
+        DebugLogger.log("GW", "chat() called: $userText")
         val token = gatewayToken
         if (token.isBlank()) {
             return Result.failure(IllegalStateException("Gateway token not configured."))
@@ -84,12 +86,15 @@ class ChatoGatewayRepository @Inject constructor(
             .post(requestBody)
             .build()
 
+        DebugLogger.log("GW", "POST ${gatewayUrl}/v1/chat/completions")
         return runCatching {
             val response = httpClient.newCall(request).execute()
+            DebugLogger.log("GW", "response ${response.code}")
             val responseBody = response.body?.string()
                 ?: return Result.failure(IllegalStateException("Empty response body."))
 
             if (!response.isSuccessful) {
+                DebugLogger.log("GW", "error: Gateway ${response.code}: $responseBody")
                 return Result.failure(
                     RuntimeException("Gateway error ${response.code}: $responseBody")
                 )

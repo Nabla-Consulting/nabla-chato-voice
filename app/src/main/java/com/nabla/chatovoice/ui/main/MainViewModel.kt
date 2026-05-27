@@ -3,6 +3,7 @@ package com.nabla.chatovoice.ui.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nabla.chatovoice.data.remote.ChatoGatewayRepository
+import com.nabla.chatovoice.util.DebugLogger
 import com.nabla.chatovoice.domain.repository.GatewayRepository
 import com.nabla.chatovoice.service.ChatoAccessibilityService
 import com.nabla.chatovoice.service.TextToSpeechManager
@@ -35,8 +36,9 @@ class MainViewModel @Inject constructor(
     }
 
     fun initTts() {
+        DebugLogger.log("TTS", "init called")
         ttsManager.initialize {
-            // TTS ready — no UI update needed
+            DebugLogger.log("TTS", "ready")
         }
     }
 
@@ -63,6 +65,7 @@ class MainViewModel @Inject constructor(
 
     fun onPushToTalkDown() {
         val hasToken = _uiData.value.hasToken
+        DebugLogger.log("VM", "PTT down, hasToken=$hasToken")
         if (!hasToken) {
             _uiData.update { it.copy(state = UiState.Error("Gateway token not set. Open Settings.")) }
             return
@@ -84,6 +87,7 @@ class MainViewModel @Inject constructor(
     }
 
     fun onPushToTalkUp() {
+        DebugLogger.log("VM", "PTT up")
         voiceInputManager.stopListening()
     }
 
@@ -93,6 +97,7 @@ class MainViewModel @Inject constructor(
             return
         }
 
+        DebugLogger.log("VM", "sending: $text")
         _uiData.update { it.copy(state = UiState.Processing) }
 
         val screenContext = ChatoAccessibilityService.screenContext
@@ -100,10 +105,12 @@ class MainViewModel @Inject constructor(
 
         result.fold(
             onSuccess = { response ->
+                DebugLogger.log("VM", "response received")
                 _uiData.update { it.copy(lastResponse = response.content, state = UiState.Speaking) }
                 speak(response.content)
             },
             onFailure = { error ->
+                DebugLogger.log("VM", "error: ${error.message}")
                 _uiData.update {
                     it.copy(state = UiState.Error(error.message ?: "Gateway error"))
                 }
