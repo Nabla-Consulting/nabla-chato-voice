@@ -47,10 +47,7 @@ fun MainScreen(viewModel: MainViewModel) {
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text("Chato Voice", fontWeight = FontWeight.Bold)
-                        Text(APP_VERSION, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    Text("Chato Voice", fontWeight = FontWeight.Bold)
                 },
                 actions = {
                     IconButton(onClick = { showSettings = true }) {

@@ -1,9 +1,22 @@
-﻿plugins {
+﻿import java.util.Properties
+
+plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
 }
+
+// Auto-increment build number from version.properties on every build
+val versionProps = Properties().also { props ->
+    val f = rootProject.file("version.properties")
+    if (f.exists()) props.load(f.inputStream())
+}
+val buildNumber = (versionProps.getProperty("BUILD_NUMBER", "1").toInt())
+    .also { current ->
+        versionProps["BUILD_NUMBER"] = (current + 1).toString()
+        rootProject.file("version.properties").writer().use { versionProps.store(it, null) }
+    }
 
 android {
     namespace = "com.nabla.chatovoice"
@@ -13,7 +26,7 @@ android {
         applicationId = "com.nabla.chatovoice"
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
+        versionCode = buildNumber
         versionName = "0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
