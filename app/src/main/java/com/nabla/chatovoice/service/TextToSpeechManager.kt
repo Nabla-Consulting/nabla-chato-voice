@@ -26,21 +26,13 @@ class TextToSpeechManager @Inject constructor(
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts?.setSpeechRate(0.85f)
-                val locale = Locale("es", "GT")
-                val langResult = tts?.setLanguage(locale)
-                if (langResult == TextToSpeech.LANG_MISSING_DATA || langResult == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    DebugLogger.log("TTS", "es-GT not supported, falling back to es-US")
-                    tts?.setLanguage(Locale("es", "US"))
+                val targetVoice = tts?.voices?.find { it.name == "es-us-x-esd-local" }
+                if (targetVoice != null) {
+                    tts?.voice = targetVoice
+                    DebugLogger.log("TTS", "voice set to es-us-x-esd-local")
                 } else {
-                    DebugLogger.log("TTS", "language set to es-GT")
-                }
-                val voices = tts?.voices
-                if (voices != null) {
-                    val esVoices = voices.filter { it.locale.language == "es" }
-                        .sortedBy { it.name }
-                        .joinToString(", ") { "${it.name}(${it.locale})" }
-                    DebugLogger.log("TTS", "es voices: $esVoices")
-                    DebugLogger.log("TTS", "total voices: ${voices.size}")
+                    DebugLogger.log("TTS", "es-us-x-esd-local not found, using es-US fallback")
+                    tts?.setLanguage(Locale("es", "US"))
                 }
                 isReady = true
                 DebugLogger.log("TTS", "ready")
