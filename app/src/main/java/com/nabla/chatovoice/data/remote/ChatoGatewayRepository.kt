@@ -12,6 +12,8 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -87,17 +89,15 @@ class ChatoGatewayRepository @Inject constructor(
             .build()
 
         DebugLogger.log("GW", "POST ${gatewayUrl}/v1/chat/completions")
-        return runCatching {
+        return withContext(Dispatchers.IO) { runCatching {
             val response = httpClient.newCall(request).execute()
             DebugLogger.log("GW", "response ${response.code}")
             val responseBody = response.body?.string()
-                ?: return Result.failure(IllegalStateException("Empty response body."))
+                ?: throw IllegalStateException("Empty response body.")
 
             if (!response.isSuccessful) {
                 DebugLogger.log("GW", "error: Gateway ${response.code}: $responseBody")
-                return Result.failure(
-                    RuntimeException("Gateway error ${response.code}: $responseBody")
-                )
+                throw RuntimeException("Gateway error ${response.code}: $responseBody")
             }
 
             val json = JSONObject(responseBody)
@@ -110,6 +110,6 @@ class ChatoGatewayRepository @Inject constructor(
             ChatResponse(content = text)
         }.onFailure { e ->
             DebugLogger.log("GW", "error: ${e.toString()}")
-        }
+        } }
     }
 }
