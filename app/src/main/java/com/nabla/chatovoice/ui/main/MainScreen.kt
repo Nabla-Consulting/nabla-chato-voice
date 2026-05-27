@@ -1,5 +1,6 @@
 package com.nabla.chatovoice.ui.main
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -110,25 +112,28 @@ fun MainScreen(viewModel: MainViewModel) {
             // Push-to-talk button
             val isRecording = uiData.state is UiState.Recording
             val isProcessing = uiData.state is UiState.Processing || uiData.state is UiState.Speaking
-            Button(
-                onClick = {},
+            val pttColor = when {
+                isProcessing -> MaterialTheme.colorScheme.surfaceVariant
+                isRecording  -> MaterialTheme.colorScheme.error
+                else         -> MaterialTheme.colorScheme.primary
+            }
+            Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(120.dp)
-                    .pointerInput(Unit) {
-                        detectTapGestures(
-                            onPress = {
-                                viewModel.onPushToTalkDown()
-                                tryAwaitRelease()
-                                viewModel.onPushToTalkUp()
-                            }
-                        )
-                    },
-                shape = CircleShape,
-                enabled = !isProcessing,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isRecording) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.primary
-                )
+                    .clip(CircleShape)
+                    .background(pttColor)
+                    .pointerInput(isProcessing) {
+                        if (!isProcessing) {
+                            detectTapGestures(
+                                onPress = {
+                                    viewModel.onPushToTalkDown()
+                                    tryAwaitRelease()
+                                    viewModel.onPushToTalkUp()
+                                }
+                            )
+                        }
+                    }
             ) {
                 Text(
                     text = if (isRecording) "🎙" else "🎤",
