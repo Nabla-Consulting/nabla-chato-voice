@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.nabla.chatovoice.app-mergeDebugResources-52:/values-v16/values-v16.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\aetxe\\.gradle\\caches\\8.9\\transforms\\8a4e3cbbc74a447bf0c8f32ae56d3c27\\transformed\\core-1.12.0\\res\\values-v16\\values-v16.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "65",
+                        "endOffsets": "116"
+                    }
+                }
+            ]
+        }
+    ]
+}
