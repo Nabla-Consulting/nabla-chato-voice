@@ -23,8 +23,8 @@ private const val PREFS_NAME = "chato_prefs"
 private const val PREF_GATEWAY_URL = "gateway_url"
 private const val PREF_GATEWAY_TOKEN = "gateway_token"
 private const val DEFAULT_GATEWAY_URL = "http://GATEWAY_HOST:18789"
-// POC: token hardcoded per explicit request — Settings dialog still allows override at runtime
-private const val DEFAULT_GATEWAY_TOKEN = "a87b770944325067720226fc70098a54d8d30863effa61c9"
+// Token must be configured via Settings dialog at runtime
+private const val DEFAULT_GATEWAY_TOKEN = ""
 private const val MAX_SCREEN_CONTEXT_CHARS = 500
 
 @Singleton
@@ -50,8 +50,7 @@ class ChatoGatewayRepository @Inject constructor(
             .apply()
     }
 
-    // Always returns true because DEFAULT_GATEWAY_TOKEN is hardcoded for this POC
-    fun hasToken(): Boolean = true
+    fun hasToken(): Boolean = gatewayToken.isNotBlank()
 
     override suspend fun chat(userText: String, screenContext: String?): Result<ChatResponse> {
         DebugLogger.log("GW", "chat() called: $userText")
