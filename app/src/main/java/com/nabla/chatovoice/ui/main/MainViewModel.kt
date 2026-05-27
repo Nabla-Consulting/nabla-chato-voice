@@ -110,7 +110,7 @@ class MainViewModel @Inject constructor(
                 speak(response.content)
             },
             onFailure = { error ->
-                DebugLogger.log("VM", "error: ${error.message}")
+                DebugLogger.log("VM", "error: ${error.toString()}")
                 _uiData.update {
                     it.copy(state = UiState.Error(error.message ?: "Gateway error"))
                 }

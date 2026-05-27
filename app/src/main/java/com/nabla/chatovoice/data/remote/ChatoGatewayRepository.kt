@@ -108,6 +108,8 @@ class ChatoGatewayRepository @Inject constructor(
                 .getString("content")
 
             ChatResponse(content = text)
+        }.onFailure { e ->
+            DebugLogger.log("GW", "error: ${e.toString()}")
         }
     }
 }

@@ -550,7 +550,7 @@ public final class DaggerChatoVoiceApp_HiltComponents_SingletonC {
     }
 
     @Override
-    public void injectChatoVoiceApp(ChatoVoiceApp arg0) {
+    public void injectChatoVoiceApp(ChatoVoiceApp chatoVoiceApp) {
     }
 
     @Override

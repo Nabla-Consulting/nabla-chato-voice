@@ -1,6 +1,12 @@
 package com.nabla.chatovoice.ui.main
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,16 +28,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nabla.chatovoice.util.DebugLogger
 
 private const val APP_VERSION = "v0.1"
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
     val uiData by viewModel.uiData.collectAsState()
     var showSettings by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -169,7 +177,16 @@ fun MainScreen(viewModel: MainViewModel) {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp),
+                    .height(200.dp)
+                    .combinedClickable(
+                        onClick = {},
+                        onLongClick = {
+                            val text = logs.joinToString("\n")
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(ClipData.newPlainText("debug_logs", text))
+                            Toast.makeText(context, "Logs copied", Toast.LENGTH_SHORT).show()
+                        }
+                    ),
                 color = Color(0xFF1A1A1A),
                 shape = MaterialTheme.shapes.small
             ) {
