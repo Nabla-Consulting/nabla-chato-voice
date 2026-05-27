@@ -34,11 +34,14 @@ class VoiceInputManager @Inject constructor(
 
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-GT")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "es-GT")
+            // Google Speech undocumented multi-language support — auto-detects between primary + additional
+            putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", arrayOf("en-US"))
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
         }
 
-        DebugLogger.log("STT", "startListening")
+        DebugLogger.log("STT", "startListening lang=es-GT+en-US")
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
             private var partialResult = ""
 
