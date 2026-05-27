@@ -1,4 +1,4 @@
-package com.nabla.chatovoice.ui.main
+﻿package com.nabla.chatovoice.ui.main
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -217,7 +217,7 @@ private fun ChatBubble(msg: ChatMessage) {
             else
                 RoundedCornerShape(topStart = 4.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp),
             color = if (isUser)
-                MaterialTheme.colorScheme.primaryContainer
+                Color(0xFFE8E8E8)   // light gray
             else
                 MaterialTheme.colorScheme.secondaryContainer,
             modifier = Modifier.widthIn(max = 280.dp)
@@ -233,7 +233,8 @@ private fun ChatBubble(msg: ChatMessage) {
                 }
                 Text(
                     text = msg.text,
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (isUser) Color(0xFF1A1A1A) else Color.Unspecified
                 )
             }
         }

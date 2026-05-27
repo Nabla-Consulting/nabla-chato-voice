@@ -1,4 +1,4 @@
-package com.nabla.chatovoice.service
+﻿package com.nabla.chatovoice.service
 
 import android.content.Context
 import android.speech.tts.TextToSpeech
@@ -25,7 +25,7 @@ class TextToSpeechManager @Inject constructor(
         DebugLogger.log("TTS", "init called")
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                tts?.setSpeechRate(0.85f)
+                tts?.setSpeechRate(1.25f)
                 val targetVoice = tts?.voices?.find { it.name == "es-us-x-esd-local" }
                 if (targetVoice != null) {
                     tts?.voice = targetVoice
@@ -41,8 +41,15 @@ class TextToSpeechManager @Inject constructor(
         }
     }
 
+    private fun stripEmojis(text: String): String {
+        // Remove emoji unicode ranges: emoticons, misc symbols, transport, supplemental
+        return text.replace(Regex("[\\p{So}\\p{Cn}\\uFE00-\\uFE0F\\u200D\\u20E3\\uFE4F]"), "")
+            .replace(Regex("[\ud83c-\udbff][\udc00-\udfff]"), "") // surrogate pairs (emoji)
+            .trim()
+    }
     suspend fun speak(text: String) = suspendCancellableCoroutine { cont ->
-        DebugLogger.log("TTS", "speaking: $text")
+        val cleanText = stripEmojis(text)
+        DebugLogger.log("TTS", "speaking: $cleanText")
         val engine = tts
         if (engine == null || !isReady) {
             cont.resumeWithException(IllegalStateException("TTS not initialized."))
@@ -67,7 +74,7 @@ class TextToSpeechManager @Inject constructor(
             }
         })
 
-        val result = engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID)
+        val result = engine.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID)
         if (result == TextToSpeech.ERROR) {
             if (cont.isActive) {
                 cont.resumeWithException(RuntimeException("TTS speak() returned ERROR."))

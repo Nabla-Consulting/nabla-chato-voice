@@ -1,4 +1,4 @@
-package com.nabla.chatovoice.ui.main
+﻿package com.nabla.chatovoice.ui.main
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -56,6 +57,12 @@ fun SettingsDialog(
                     modifier = Modifier.fillMaxWidth(),
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Version ${com.nabla.chatovoice.BuildConfig.VERSION_NAME} (${com.nabla.chatovoice.BuildConfig.VERSION_CODE})",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         },

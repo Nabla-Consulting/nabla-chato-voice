@@ -1,4 +1,4 @@
-package com.nabla.chatovoice.ui.main
+﻿package com.nabla.chatovoice.ui.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -93,6 +93,12 @@ class MainViewModel @Inject constructor(
         voiceInputManager.stopListening()
     }
 
+    private fun stripAgentPrefix(text: String): String {
+        // Matches patterns like "🤘 [Chato] ", "💻 [Elliot] ", etc.
+        return text.trimStart()
+            .replace(Regex("^[\\p{So}\\p{Cn}\\uD83C-\\uDBFF\\uDC00-\\uDFFF]+\\s*\\[\\w+\\]\\s*"), "")
+            .trimStart()
+    }
     private suspend fun sendToGateway(text: String) {
         if (text.isBlank()) {
             _uiData.update { it.copy(state = UiState.Idle) }
@@ -104,12 +110,13 @@ class MainViewModel @Inject constructor(
         val result = gatewayRepository.chat(text, screenContext)
         result.fold(
             onSuccess = { response ->
+                val cleanContent = stripAgentPrefix(response.content)
                 DebugLogger.log("VM", "response received")
                 _uiData.update { it.copy(
-                    messages = it.messages + ChatMessage(response.content, MessageSender.CHATO),
+                    messages = it.messages + ChatMessage(cleanContent, MessageSender.CHATO),
                     state = UiState.Speaking
                 )}
-                speak(response.content)
+                speak(cleanContent)
             },
             onFailure = { error ->
                 DebugLogger.log("VM", "error: ${error.toString()}")

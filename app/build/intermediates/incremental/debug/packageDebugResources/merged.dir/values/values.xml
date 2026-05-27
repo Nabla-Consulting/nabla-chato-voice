@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="ic_launcher_background">#1C1C2E</color>
     <string name="accessibility_service_description">Chato Voice reads screen content to provide context-aware responses from the Chato AI assistant.</string>
     <string name="app_name">Chato Voice</string>
     <string name="btn_hold_to_talk">Hold to Talk</string>
