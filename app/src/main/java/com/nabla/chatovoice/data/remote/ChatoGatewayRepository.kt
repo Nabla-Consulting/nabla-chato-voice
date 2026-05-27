@@ -17,7 +17,8 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val MODEL = "openclaw"
+private const val MODEL = "openclaw/main"
+private const val SESSION_USER = "alejandro"
 private const val PREFS_NAME = "chato_prefs"
 private const val PREF_GATEWAY_URL = "gateway_url"
 private const val PREF_GATEWAY_TOKEN = "gateway_token"
@@ -69,6 +70,7 @@ class ChatoGatewayRepository @Inject constructor(
 
         val bodyJson = JSONObject().apply {
             put("model", MODEL)
+            put("user", SESSION_USER)
             put(
                 "messages",
                 JSONArray().apply {
