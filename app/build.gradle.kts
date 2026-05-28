@@ -1,4 +1,4 @@
-ï»¿plugins {
+plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt)
@@ -17,6 +17,16 @@ android {
         versionName = "2026.05.27.01"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // APK naming: <namespace>-debug.apk for debug, <namespace>.apk for release
+    applicationVariants.all {
+        val variant = this
+        variant.outputs.all {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            val ns = android.namespace ?: applicationId
+            output.outputFileName = if (variant.buildType.name == "debug") "$ns-debug.apk" else "$ns.apk"
+        }
     }
 
     buildTypes {
@@ -50,6 +60,12 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            // Azure Speech SDK ships duplicate license files
+            excludes += "/META-INF/DEPENDENCIES"
+            excludes += "/META-INF/LICENSE"
+            excludes += "/META-INF/LICENSE.txt"
+            excludes += "/META-INF/NOTICE"
+            excludes += "/META-INF/NOTICE.txt"
         }
     }
 }
@@ -71,6 +87,8 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
     implementation(libs.coroutines.android)
+    // Azure Cognitive Services Speech SDK — conversation transcription with diarization
+    implementation("com.microsoft.cognitiveservices.speech:client-sdk:1.44.0")
 
     debugImplementation(libs.compose.ui.tooling)
 
