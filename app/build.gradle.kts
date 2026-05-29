@@ -44,6 +44,7 @@ android {
             buildConfigField("String", "DEBUG_GATEWAY_TOKEN", "\"${secretsProps["DEBUG_GATEWAY_TOKEN"] ?: ""}\"")
             buildConfigField("String", "DEBUG_AZURE_SPEECH_KEY", "\"${secretsProps["DEBUG_AZURE_SPEECH_KEY"] ?: ""}\"")
             buildConfigField("String", "DEBUG_AZURE_SPEECH_REGION", "\"${secretsProps["DEBUG_AZURE_SPEECH_REGION"] ?: ""}\"")
+            buildConfigField("String", "DEBUG_GATEWAY_URL", "\"${secretsProps["DEBUG_GATEWAY_URL"] ?: ""}\"")
         }
         release {
             isMinifyEnabled = false
@@ -55,6 +56,7 @@ android {
             buildConfigField("String", "DEBUG_GATEWAY_TOKEN", "\"\"")
             buildConfigField("String", "DEBUG_AZURE_SPEECH_KEY", "\"\"")
             buildConfigField("String", "DEBUG_AZURE_SPEECH_REGION", "\"\"")
+            buildConfigField("String", "DEBUG_GATEWAY_URL", "\"\"")
         }
     }
 

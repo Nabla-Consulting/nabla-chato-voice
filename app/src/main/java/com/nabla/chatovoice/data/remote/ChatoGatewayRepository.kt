@@ -31,7 +31,7 @@ private const val PREF_CONTEXT_NOTES = "context_notes"
 private const val PREF_SUMMARY_TEXT = "summary_text"
 private const val PREF_TRANSCRIPT_JSON = "transcript_json"
 private const val PREF_DEFAULT_FOLDER = "default_obsidian_folder"
-private const val DEFAULT_GATEWAY_URL = "http://GATEWAY_HOST:18789"
+private const val DEFAULT_GATEWAY_URL = ""
 private const val DEFAULT_AZURE_REGION = "eastus"
 private const val DEFAULT_TRANSCRIPTION_LANGUAGE = "en-US"
 private const val MAX_SCREEN_CONTEXT_CHARS = 500
@@ -47,7 +47,9 @@ class ChatoGatewayRepository @Inject constructor(
     }
 
     val gatewayUrl: String
-        get() = prefs.getString(PREF_GATEWAY_URL, DEFAULT_GATEWAY_URL) ?: DEFAULT_GATEWAY_URL
+        get() = prefs.getString(PREF_GATEWAY_URL, "")
+            ?.ifBlank { if (BuildConfig.DEBUG) BuildConfig.DEBUG_GATEWAY_URL else "" }
+            ?: ""
 
     // In debug builds, fall back to BuildConfig values injected from secrets.properties (gitignored).
     // In release builds, BuildConfig fields are empty strings — user must configure via Settings.
