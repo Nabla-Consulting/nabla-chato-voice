@@ -14,6 +14,7 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
+    private val transcribeViewModel: TranscribeViewModel by viewModels()
 
     private val micPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -25,18 +26,22 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        DebugLogger.log("APP", "onCreate — v0.1")
+        DebugLogger.log("APP", "onCreate -- v0.1")
         micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         viewModel.initTts()
+        // Fix Bug 3: provide Activity reference for MSAL interactive sign-in
+        transcribeViewModel.setActivity(this)
         setContent {
             ChatoVoiceTheme {
-                MainScreen(viewModel = viewModel)
+                MainScreen(viewModel = viewModel, transcribeViewModel = transcribeViewModel)
             }
         }
     }
 
     override fun onResume() {
         super.onResume()
+        // Fix Bug 3: refresh activity ref on resume (Activity may have been recreated)
+        transcribeViewModel.setActivity(this)
         viewModel.refreshAccessibilityStatus()
     }
 }

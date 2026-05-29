@@ -1,4 +1,4 @@
-﻿package com.nabla.chatovoice.ui.main
+package com.nabla.chatovoice.ui.main
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -10,10 +10,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,22 +38,51 @@ import android.content.Context
 import android.widget.Toast
 import com.nabla.chatovoice.util.DebugLogger
 
-private const val APP_VERSION = "v0.1"
+private const val APP_VERSION = "v1.0"
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun MainScreen(viewModel: MainViewModel) {
+fun MainScreen(viewModel: MainViewModel, transcribeViewModel: TranscribeViewModel) {
     val uiData by viewModel.uiData.collectAsStateWithLifecycle()
     var showSettings by remember { mutableStateOf(false) }
-    var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Chat", "Debug")
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    val tabs = listOf("Transcribe", "Chat", "Debug")
     val context = LocalContext.current
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Chato Voice", fontWeight = FontWeight.Bold)
+                    var showNavMenu by remember { mutableStateOf(false) }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { showNavMenu = true }
+                    ) {
+                        Text("Chato Voice", fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.width(4.dp))
+                        Icon(
+                            if (showNavMenu) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                            contentDescription = "Navigate",
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showNavMenu,
+                        onDismissRequest = { showNavMenu = false }
+                    ) {
+                        tabs.forEachIndexed { index, label ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        label,
+                                        fontWeight = if (index == selectedTab) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (index == selectedTab) MaterialTheme.colorScheme.primary else Color.Unspecified
+                                    )
+                                },
+                                onClick = { selectedTab = index; showNavMenu = false }
+                            )
+                        }
+                    }
                 },
                 actions = {
                     IconButton(onClick = { showSettings = true }) {
@@ -57,73 +92,76 @@ fun MainScreen(viewModel: MainViewModel) {
             )
         },
         bottomBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(bottom = 24.dp, top = 12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Status row
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val currentState = uiData.state
-                    Text(
-                        text = when (currentState) {
-                            is UiState.Idle -> "Ready"
-                            is UiState.Recording -> "🎙 Recording..."
-                            is UiState.Processing -> "⏳ Thinking..."
-                            is UiState.Speaking -> "🔊 Speaking..."
-                            is UiState.Error -> "⚠️ ${currentState.message}"
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        textAlign = TextAlign.Center,
-                        color = if (uiData.state is UiState.Error)
-                            MaterialTheme.colorScheme.error
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                // PTT button — fixed, no scroll
-                val isRecording = uiData.state is UiState.Recording
-                val isProcessing = uiData.state is UiState.Processing || uiData.state is UiState.Speaking
-                val pttColor = when {
-                    isProcessing -> MaterialTheme.colorScheme.surfaceVariant
-                    isRecording  -> MaterialTheme.colorScheme.error
-                    else         -> MaterialTheme.colorScheme.primary
-                }
-                Box(
-                    contentAlignment = Alignment.Center,
+            // PTT bar only on Chat tab (tab 1) — fully hidden on other tabs
+            if (selectedTab == 1) {
+                Column(
                     modifier = Modifier
-                        .size(100.dp)
-                        .clip(CircleShape)
-                        .background(pttColor)
-                        .pointerInput(isProcessing) {
-                            if (!isProcessing) {
-                                detectTapGestures(
-                                    onPress = {
-                                        viewModel.onPushToTalkDown()
-                                        tryAwaitRelease()
-                                        viewModel.onPushToTalkUp()
-                                    }
-                                )
-                            }
-                        }
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(bottom = 24.dp, top = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    // Status row
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val currentState = uiData.state
+                        Text(
+                            text = when (currentState) {
+                                is UiState.Idle -> "Ready"
+                                is UiState.Recording -> "🎙 Recording..."
+                                is UiState.Processing -> "⏳ Thinking..."
+                                is UiState.Speaking -> "🔊 Speaking..."
+                                is UiState.Error -> "⚠️ ${currentState.message}"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center,
+                            color = if (uiData.state is UiState.Error)
+                                MaterialTheme.colorScheme.error
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    // PTT button — fixed, no scroll
+                    val isRecording = uiData.state is UiState.Recording
+                    val isProcessing = uiData.state is UiState.Processing || uiData.state is UiState.Speaking
+                    val pttColor = when {
+                        isProcessing -> MaterialTheme.colorScheme.surfaceVariant
+                        isRecording  -> MaterialTheme.colorScheme.error
+                        else         -> MaterialTheme.colorScheme.primary
+                    }
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(CircleShape)
+                            .background(pttColor)
+                            .pointerInput(isProcessing) {
+                                if (!isProcessing) {
+                                    detectTapGestures(
+                                        onPress = {
+                                            viewModel.onPushToTalkDown()
+                                            tryAwaitRelease()
+                                            viewModel.onPushToTalkUp()
+                                        }
+                                    )
+                                }
+                            }
+                    ) {
+                        Text(
+                            text = if (isRecording) "🎙" else "🎤",
+                            fontSize = 32.sp
+                        )
+                    }
                     Text(
-                        text = if (isRecording) "🎙" else "🎤",
-                        fontSize = 32.sp
+                        text = if (isRecording) "Release to send" else "Hold to talk",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Text(
-                    text = if (isRecording) "Release to send" else "Hold to talk",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
     ) { innerPadding ->
@@ -132,20 +170,10 @@ fun MainScreen(viewModel: MainViewModel) {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Tab row
-            TabRow(selectedTabIndex = selectedTab) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = { Text(title) }
-                    )
-                }
-            }
-
             when (selectedTab) {
-                0 -> ChatTab(uiData = uiData)
-                1 -> DebugTab(context = context)
+                0 -> TranscribeScreen(viewModel = transcribeViewModel)
+                1 -> ChatTab(uiData = uiData)
+                2 -> DebugTab(context = context)
             }
         }
     }
@@ -154,9 +182,12 @@ fun MainScreen(viewModel: MainViewModel) {
         SettingsDialog(
             initialUrl = uiData.gatewayUrl,
             initialToken = uiData.gatewayToken,
+            initialAzureKey = uiData.azureSpeechKey,
+            initialAzureRegion = uiData.azureSpeechRegion,
             onDismiss = { showSettings = false },
-            onSave = { url, token ->
+            onSave = { url, token, azureKey, azureRegion ->
                 viewModel.saveSettings(url, token)
+                viewModel.saveAzureSettings(azureKey, azureRegion)
                 showSettings = false
             }
         )

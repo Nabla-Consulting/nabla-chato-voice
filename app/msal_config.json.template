@@ -1,0 +1,6 @@
+{
+  "client_id": "MSAL_CLIENT_ID_HERE",
+  "authorization_user_agent": "DEFAULT",
+  "redirect_uri": "msauth://com.nabla.chatovoice/SIGNATURE_HASH_HERE",
+  "authorities": [{"type": "AAD", "audience": {"type": "PersonalMicrosoftAccount", "tenant_id": "consumers"}}]
+}

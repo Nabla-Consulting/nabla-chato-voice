@@ -48,12 +48,26 @@ class MainViewModel @Inject constructor(
                 hasToken = chatoGatewayRepository.hasToken(),
                 gatewayUrl = chatoGatewayRepository.gatewayUrl,
                 gatewayToken = chatoGatewayRepository.gatewayToken,
+                azureSpeechKey = chatoGatewayRepository.azureSpeechKey,
+                azureSpeechRegion = chatoGatewayRepository.azureSpeechRegion,
+                transcriptionLanguage = chatoGatewayRepository.transcriptionLanguage,
+                graphToken = chatoGatewayRepository.graphToken,
             )
         }
     }
 
     fun saveSettings(url: String, token: String) {
         chatoGatewayRepository.saveSettings(url, token)
+        loadSettings()
+    }
+
+    fun saveAzureSettings(key: String, region: String) {
+        chatoGatewayRepository.saveAzureSettings(key, region)
+        loadSettings()
+    }
+
+    fun saveGraphToken(token: String) {
+        chatoGatewayRepository.saveGraphToken(token)
         loadSettings()
     }
 

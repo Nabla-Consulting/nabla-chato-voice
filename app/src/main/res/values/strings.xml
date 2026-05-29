@@ -14,4 +14,10 @@
     <string name="settings">Settings</string>
     <string name="error_no_token">Gateway token not set. Open Settings.</string>
     <string name="error_mic_permission">Microphone permission required.</string>
+    <string name="label_azure_speech_key">Azure Speech Key</string>
+    <string name="hint_azure_speech_key">Enter your Azure Speech subscription key</string>
+    <string name="label_azure_speech_region">Azure Region</string>
+    <string name="hint_azure_speech_region">e.g. eastus</string>
+    <string name="label_transcription_language">Transcription Language</string>
+    <string name="hint_transcription_language">e.g. en-US, es-MX</string>
 </resources>

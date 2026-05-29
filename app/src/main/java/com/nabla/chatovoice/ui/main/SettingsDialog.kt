@@ -1,12 +1,15 @@
-﻿package com.nabla.chatovoice.ui.main
+package com.nabla.chatovoice.ui.main
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -27,17 +30,32 @@ import com.nabla.chatovoice.R
 fun SettingsDialog(
     initialUrl: String,
     initialToken: String,
+    initialAzureKey: String,
+    initialAzureRegion: String,
     onDismiss: () -> Unit,
-    onSave: (url: String, token: String) -> Unit,
+    onSave: (url: String, token: String, azureKey: String, azureRegion: String) -> Unit,
 ) {
     var url by remember { mutableStateOf(initialUrl) }
     var token by remember { mutableStateOf(initialToken) }
+    var azureKey by remember { mutableStateOf(initialAzureKey) }
+    var azureRegion by remember { mutableStateOf(initialAzureRegion) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.settings)) },
         text = {
-            Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            Column(
+                modifier = Modifier
+                    .padding(vertical = 8.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // --- Gateway section ---
+                Text(
+                    text = "Gateway",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },
@@ -58,6 +76,38 @@ fun SettingsDialog(
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // --- Azure Speech section ---
+                Text(
+                    text = "Azure Speech",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = azureKey,
+                    onValueChange = { azureKey = it },
+                    label = { Text(stringResource(R.string.label_azure_speech_key)) },
+                    placeholder = { Text(stringResource(R.string.hint_azure_speech_key)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = azureRegion,
+                    onValueChange = { azureRegion = it },
+                    label = { Text(stringResource(R.string.label_azure_speech_region)) },
+                    placeholder = { Text(stringResource(R.string.hint_azure_speech_region)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "Version ${com.nabla.chatovoice.BuildConfig.VERSION_NAME} (${com.nabla.chatovoice.BuildConfig.VERSION_CODE})",
@@ -67,7 +117,7 @@ fun SettingsDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(url, token) }) {
+            TextButton(onClick = { onSave(url, token, azureKey, azureRegion) }) {
                 Text(stringResource(R.string.save))
             }
         },

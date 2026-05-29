@@ -22,4 +22,8 @@ data class MainUiData(
     val hasToken: Boolean = false,
     val gatewayUrl: String = "",
     val gatewayToken: String = "",
+    val azureSpeechKey: String = "",
+    val azureSpeechRegion: String = "eastus",
+    val transcriptionLanguage: String = "en-US",
+    val graphToken: String = "",
 )
