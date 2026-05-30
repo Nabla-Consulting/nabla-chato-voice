@@ -404,11 +404,25 @@ private fun SummarySubTab(
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
             ) {
                 summaryText?.let { summary ->
-                    // Always render as Markdown — toggle only affects copy
-                    MarkdownText(
-                        text = summary,
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                    if (markdownMode) {
+                        // Rendered markdown
+                        MarkdownText(
+                            text = summary,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else {
+                        // Plain text — strip markdown syntax
+                        SelectionContainer {
+                            Text(
+                                text = stripMarkdown(summary),
+                                modifier = Modifier
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(12.dp)
+                                    .fillMaxSize(),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
                 } ?: Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,

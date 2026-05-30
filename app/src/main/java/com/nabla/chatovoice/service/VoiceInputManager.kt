@@ -94,6 +94,66 @@ class VoiceInputManager @Inject constructor(
         speechRecognizer.startListening(intent)
     }
 
+    /**
+     * Listens for a single utterance and returns the transcribed text, or null if no speech
+     * was detected (ERROR_NO_MATCH or ERROR_SPEECH_TIMEOUT). Other errors are thrown as exceptions.
+     */
+    suspend fun listenOnce(): String? = suspendCancellableCoroutine { cont ->
+        DebugLogger.log("VIM", "listenOnce() called")
+        val speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
+        recognizer = speechRecognizer
+
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-GT")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "es-GT")
+            putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", arrayOf("en-US"))
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+        }
+
+        speechRecognizer.setRecognitionListener(object : RecognitionListener {
+            override fun onReadyForSpeech(params: Bundle?) { DebugLogger.log("STT", "listenOnce: ready") }
+            override fun onBeginningOfSpeech() { DebugLogger.log("STT", "listenOnce: speech started") }
+            override fun onRmsChanged(rmsdB: Float) {}
+            override fun onBufferReceived(buffer: ByteArray?) {}
+            override fun onEndOfSpeech() { DebugLogger.log("STT", "listenOnce: speech ended") }
+            override fun onPartialResults(partialResults: Bundle?) {}
+            override fun onEvent(eventType: Int, params: Bundle?) {}
+
+            override fun onResults(results: Bundle?) {
+                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                val text = if (!matches.isNullOrEmpty()) matches[0] else null
+                DebugLogger.log("STT", "listenOnce result: $text")
+                cleanup()
+                if (cont.isActive) cont.resume(text)
+            }
+
+            override fun onError(error: Int) {
+                DebugLogger.log("STT", "listenOnce error: $error")
+                cleanup()
+                if (!cont.isActive) return
+                when (error) {
+                    SpeechRecognizer.ERROR_NO_MATCH,
+                    SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> cont.resume(null)
+                    else -> cont.resumeWithException(RuntimeException("Speech error: ${speechErrorMessage(error)}"))
+                }
+            }
+
+            private fun cleanup() {
+                recognizer?.destroy()
+                recognizer = null
+            }
+        })
+
+        cont.invokeOnCancellation {
+            speechRecognizer.cancel()
+            speechRecognizer.destroy()
+            recognizer = null
+        }
+
+        speechRecognizer.startListening(intent)
+    }
+
     fun stopListening() {
         DebugLogger.log("PTT", "stopListening called")
         recognizer?.stopListening()

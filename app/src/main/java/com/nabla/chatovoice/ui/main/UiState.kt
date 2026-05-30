@@ -3,6 +3,7 @@ package com.nabla.chatovoice.ui.main
 sealed class UiState {
     object Idle : UiState()
     object Recording : UiState()
+    object Thinking : UiState()
     object Processing : UiState()
     object Speaking : UiState()
     data class Error(val message: String) : UiState()
@@ -26,4 +27,5 @@ data class MainUiData(
     val azureSpeechRegion: String = "eastus",
     val transcriptionLanguage: String = "en-US",
     val graphToken: String = "",
+    val isConversationMode: Boolean = false,
 )

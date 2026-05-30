@@ -11,6 +11,7 @@ import com.nabla.chatovoice.service.VoiceInputManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +31,16 @@ class MainViewModel @Inject constructor(
     val uiData: StateFlow<MainUiData> = _uiData.asStateFlow()
 
     private var listenJob: Job? = null
+    private var conversationJob: Job? = null
+
+    companion object {
+        /** 5 minutes of silence stops the conversation loop. */
+        private const val CONVERSATION_SILENCE_TIMEOUT_MS = 300_000L
+        /** Brief pause between TTS completion and the next listen cycle. */
+        private const val CONVERSATION_LOOP_DELAY_MS = 300L
+        /** Retry delay when the recognizer reports busy. */
+        private const val RECOGNIZER_BUSY_RETRY_DELAY_MS = 500L
+    }
 
     init {
         loadSettings()
@@ -76,6 +87,124 @@ class MainViewModel @Inject constructor(
             it.copy(isAccessibilityConnected = ChatoAccessibilityService.isConnected)
         }
     }
+
+    // --- Conversation mode ---
+
+    fun startConversation() {
+        if (_uiData.value.isConversationMode) return
+        val hasToken = _uiData.value.hasToken
+        DebugLogger.log("VM", "startConversation, hasToken=$hasToken")
+        if (!hasToken) {
+            _uiData.update { it.copy(state = UiState.Error("Gateway token not set. Open Settings.")) }
+            return
+        }
+        _uiData.update { it.copy(isConversationMode = true, state = UiState.Recording) }
+        conversationJob = viewModelScope.launch {
+            runConversationLoop()
+        }
+    }
+
+    fun stopConversation() {
+        DebugLogger.log("VM", "stopConversation")
+        conversationJob?.cancel()
+        conversationJob = null
+        voiceInputManager.stopListening()
+        _uiData.update { it.copy(isConversationMode = false, state = UiState.Idle) }
+    }
+
+    private suspend fun runConversationLoop() {
+        var lastSpeechMs = System.currentTimeMillis()
+        var silenceRetryCount = 0
+
+        try {
+            while (_uiData.value.isConversationMode) {
+                _uiData.update { it.copy(state = UiState.Recording) }
+
+                val text = try {
+                    voiceInputManager.listenOnce()
+                } catch (e: RuntimeException) {
+                    val msg = e.message ?: ""
+                    DebugLogger.log("VM", "listenOnce error in loop: $msg")
+                    when {
+                        msg.contains("Recognizer busy") -> {
+                            delay(RECOGNIZER_BUSY_RETRY_DELAY_MS)
+                            continue
+                        }
+                        else -> {
+                            // Non-fatal errors: treat as silence
+                            null
+                        }
+                    }
+                }
+
+                if (!_uiData.value.isConversationMode) break
+
+                if (text.isNullOrBlank()) {
+                    // No speech detected — check silence timeout
+                    val silentMs = System.currentTimeMillis() - lastSpeechMs
+                    DebugLogger.log("VM", "conv: no speech, silent=${silentMs}ms")
+                    if (silentMs >= CONVERSATION_SILENCE_TIMEOUT_MS) {
+                        DebugLogger.log("VM", "conv: 5-min silence timeout, stopping")
+                        stopConversation()
+                        return
+                    }
+                    silenceRetryCount++
+                    continue
+                }
+
+                // Got speech — reset silence tracking
+                lastSpeechMs = System.currentTimeMillis()
+                silenceRetryCount = 0
+
+                _uiData.update { it.copy(
+                    messages = it.messages + ChatMessage(text, MessageSender.USER),
+                    state = UiState.Thinking
+                )}
+
+                sendToGatewayForConversation(text)
+
+                if (!_uiData.value.isConversationMode) break
+
+                // Brief pause after TTS before next listen cycle
+                delay(CONVERSATION_LOOP_DELAY_MS)
+            }
+        } catch (e: CancellationException) {
+            DebugLogger.log("VM", "conv: loop cancelled")
+            // Job was cancelled — let caller clean up state
+        }
+    }
+
+    private suspend fun sendToGatewayForConversation(text: String) {
+        if (text.isBlank()) return
+        DebugLogger.log("VM", "conv sending: $text")
+        _uiData.update { it.copy(state = UiState.Processing) }
+        val screenContext = ChatoAccessibilityService.screenContext
+        val result = gatewayRepository.chat(text, screenContext)
+        result.fold(
+            onSuccess = { response ->
+                val cleanContent = stripAgentPrefix(response.content)
+                DebugLogger.log("VM", "conv response received")
+                _uiData.update { it.copy(
+                    messages = it.messages + ChatMessage(cleanContent, MessageSender.CHATO),
+                    state = UiState.Speaking
+                )}
+                // Do not restart loop while TTS is speaking
+                speak(cleanContent)
+                // speak() sets state to Idle when done; restore Recording if still in conversation
+                if (_uiData.value.isConversationMode) {
+                    _uiData.update { it.copy(state = UiState.Recording) }
+                }
+            },
+            onFailure = { error ->
+                DebugLogger.log("VM", "conv error: $error")
+                _uiData.update { it.copy(state = UiState.Error(error.toString())) }
+                // On gateway error in conversation mode, stop the loop
+                stopConversation()
+            }
+        )
+    }
+
+    // --- PTT (existing, preserved) ---
 
     fun onPushToTalkDown() {
         val hasToken = _uiData.value.hasToken
@@ -155,6 +284,7 @@ class MainViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+        conversationJob?.cancel()
         voiceInputManager.destroy()
         ttsManager.destroy()
     }

@@ -11,6 +11,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
@@ -110,9 +116,10 @@ fun MainScreen(viewModel: MainViewModel, transcribeViewModel: TranscribeViewMode
                         val currentState = uiData.state
                         Text(
                             text = when (currentState) {
-                                is UiState.Idle -> "Ready"
-                                is UiState.Recording -> "🎙 Recording..."
-                                is UiState.Processing -> "⏳ Thinking..."
+                                is UiState.Idle -> if (uiData.isConversationMode) "🎙 Listening..." else "Ready"
+                                is UiState.Recording -> "🎙 Listening..."
+                                is UiState.Thinking -> "🧠 Thinking..."
+                                is UiState.Processing -> "⏳ Processing..."
                                 is UiState.Speaking -> "🔊 Speaking..."
                                 is UiState.Error -> "⚠️ ${currentState.message}"
                             },
@@ -127,40 +134,83 @@ fun MainScreen(viewModel: MainViewModel, transcribeViewModel: TranscribeViewMode
 
                     // PTT button — fixed, no scroll
                     val isRecording = uiData.state is UiState.Recording
-                    val isProcessing = uiData.state is UiState.Processing || uiData.state is UiState.Speaking
-                    val pttColor = when {
-                        isProcessing -> MaterialTheme.colorScheme.surfaceVariant
-                        isRecording  -> MaterialTheme.colorScheme.error
-                        else         -> MaterialTheme.colorScheme.primary
-                    }
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(CircleShape)
-                            .background(pttColor)
-                            .pointerInput(isProcessing) {
-                                if (!isProcessing) {
-                                    detectTapGestures(
-                                        onPress = {
-                                            viewModel.onPushToTalkDown()
-                                            tryAwaitRelease()
-                                            viewModel.onPushToTalkUp()
-                                        }
-                                    )
-                                }
-                            }
+                    val isProcessing = uiData.state is UiState.Processing
+                        || uiData.state is UiState.Thinking
+                        || uiData.state is UiState.Speaking
+                    val isConversation = uiData.isConversationMode
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(24.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = if (isRecording) "🎙" else "🎤",
-                            fontSize = 32.sp
-                        )
+                        // PTT button
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            val pttColor = when {
+                                isProcessing || isConversation -> MaterialTheme.colorScheme.surfaceVariant
+                                isRecording -> MaterialTheme.colorScheme.error
+                                else -> MaterialTheme.colorScheme.primary
+                            }
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clip(CircleShape)
+                                    .background(pttColor)
+                                    .pointerInput(isProcessing, isConversation) {
+                                        if (!isProcessing && !isConversation) {
+                                            detectTapGestures(
+                                                onPress = {
+                                                    viewModel.onPushToTalkDown()
+                                                    tryAwaitRelease()
+                                                    viewModel.onPushToTalkUp()
+                                                }
+                                            )
+                                        }
+                                    }
+                            ) {
+                                Text(
+                                    text = if (isRecording && !isConversation) "🎙" else "🎤",
+                                    fontSize = 28.sp
+                                )
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = if (isRecording && !isConversation) "Release to send" else "Hold to talk",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        // Conversation toggle button
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            val convColor = if (isConversation)
+                                MaterialTheme.colorScheme.error
+                            else
+                                MaterialTheme.colorScheme.tertiary
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clip(CircleShape)
+                                    .background(convColor)
+                                    .clickable {
+                                        if (isConversation) viewModel.stopConversation()
+                                        else viewModel.startConversation()
+                                    }
+                            ) {
+                                Text(
+                                    text = if (isConversation) "⏹" else "🔁",
+                                    fontSize = 28.sp
+                                )
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = if (isConversation) "Stop" else "Conversation",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
-                    Text(
-                        text = if (isRecording) "Release to send" else "Hold to talk",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
         }
@@ -211,8 +261,9 @@ private fun ChatTab(uiData: MainUiData) {
         items(uiData.messages) { msg ->
             ChatBubble(msg)
         }
-        // Processing indicator
-        if (uiData.state is UiState.Processing) {
+        // Thinking / processing indicator
+        val showThinking = uiData.state is UiState.Thinking || uiData.state is UiState.Processing
+        if (showThinking) {
             item {
                 Row(modifier = Modifier.fillMaxWidth()) {
                     Surface(
@@ -220,14 +271,51 @@ private fun ChatTab(uiData: MainUiData) {
                         color = MaterialTheme.colorScheme.secondaryContainer,
                         modifier = Modifier.widthIn(max = 280.dp)
                     ) {
-                        Text(
-                            text = "...",
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            style = MaterialTheme.typography.bodyMedium
+                        ThinkingDotsIndicator(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)
                         )
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Three animated dots indicating the assistant is thinking/processing.
+ * Each dot fades in/out with a staggered delay.
+ */
+@Composable
+private fun ThinkingDotsIndicator(modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "thinking")
+
+    @Composable
+    fun dotAlpha(delayMs: Int): Float {
+        val alpha by infiniteTransition.animateFloat(
+            initialValue = 0.3f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 500, delayMillis = delayMs, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "dot_alpha_$delayMs"
+        )
+        return alpha
+    }
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        listOf(0, 160, 320).forEach { delay ->
+            val alpha = dotAlpha(delay)
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.secondary.copy(alpha = alpha))
+            )
         }
     }
 }
